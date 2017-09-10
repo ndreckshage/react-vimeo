@@ -1,4 +1,5 @@
-import React, { PropTypes, cloneElement } from 'react';
+import React, { cloneElement } from 'react';
+import PropTypes from 'prop-types';
 import keyMirror from 'keymirror';
 import jsonp from 'jsonp';
 import debugFactory from 'debug';
@@ -38,10 +39,8 @@ function post(method, value, player, playerOrigin) {
   return null;
 }
 
-export default React.createClass({
-  displayName: 'Vimeo',
-
-  propTypes: {
+export default class Vimeo extends React.Component {
+  static propTypes = {
     autoplay: PropTypes.bool,
     className: PropTypes.string,
     loading: PropTypes.element,
@@ -62,78 +61,85 @@ export default React.createClass({
     onTextTrackChanged: PropTypes.func,
     onTimeUpdate: PropTypes.func,
     onVolumeChange: PropTypes.func
-  },
+  };
 
-  getDefaultProps() {
-    const defaults = Object.keys(playerEvents)
+  static defaultProps = {
+    ...Object.keys(playerEvents)
       .concat(['ready'])
       .reduce((defaults, event) => {
         defaults['on' + capitalize(event)] = noop;
         return defaults;
-      }, {});
+      }, {}),
 
-    defaults.className = 'vimeo';
-    defaults.playerOptions = { autoplay: 1 };
-    defaults.autoplay = false;
-    return defaults;
-  },
+    className: 'vimeo',
+    playerOptions: { autoplay: 1 },
+    autoplay: false
+  };
 
-  getInitialState() {
-    return {
-      imageLoaded: false,
-      playerOrigin: '*',
-      showingVideo: this.props.autoplay,
-      thumb: null
-    };
-  },
+  state = {
+    imageLoaded: false,
+    playerOrigin: '*',
+    showingVideo: this.props.autoplay,
+    thumb: null
+  };
+
+  mounted = false;
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.videoId !== this.props.videoId) {
-      this.setState({
+      this.setMountedState({
         thumb: null,
         imageLoaded: false,
         showingVideo: false
       });
     }
-  },
+  }
 
   componentDidMount() {
+    this.mounted = true;
     this.fetchVimeoData();
-  },
+  }
 
   componentDidUpdate() {
     this.fetchVimeoData();
-  },
+  }
 
   componentWillUnmount() {
+    this.mounted = false;
     const removeEventListener = typeof window !== 'undefined' ?
       ::window.removeEventListener :
       noop;
 
     removeEventListener('message', this.onMessage);
-  },
+  }
 
-  addMessageListener() {
+  setMountedState = state => {
+    if (this.mounted) {
+      this.setState(state);
+    }
+  }
+
+  addMessageListener = () => {
     const addEventListener = typeof window !== 'undefined' ?
       ::window.addEventListener :
       noop;
 
     addEventListener('message', this.onMessage);
-  },
+  }
 
-  onError(err) {
+  onError = (err) => {
     if (this.props.onError) {
       this.props.onError(err);
     }
     throw err;
-  },
+  }
 
-  onMessage({ origin, data }) {
+  onMessage = ({ origin, data }) => {
     const { onReady } = this.props;
     const { playerOrigin } = this.state;
 
     if (playerOrigin === '*') {
-      this.setState({
+      this.setMountedState({
         playerOrigin: origin
       });
     }
@@ -167,9 +173,9 @@ export default React.createClass({
     }
     debug('firing event: ', data.event);
     getFuncForEvent(data.event, this.props)(data);
-  },
+  }
 
-  onReady(player, playerOrigin) {
+  onReady = (player, playerOrigin) => {
     Object.keys(playerEvents).forEach(event => {
       var err = post(
         'addEventListener',
@@ -181,29 +187,29 @@ export default React.createClass({
         this.onError(err);
       }
     });
-  },
+  }
 
-  playVideo(e) {
+  playVideo = (e) => {
     e.preventDefault();
-    this.setState({ showingVideo: true });
-  },
+    this.setMountedState({ showingVideo: true });
+  }
 
-  getIframeUrl() {
+  getIframeUrl = () => {
     const { videoId } = this.props;
     const query = this.getIframeUrlQuery();
     return `//player.vimeo.com/video/${videoId}?${query}`;
-  },
+  }
 
-  getIframeUrlQuery() {
+  getIframeUrlQuery = () => {
     let str = [];
     Object.keys(this.props.playerOptions).forEach(key => {
       str.push(`${key}=${this.props.playerOptions[key]}`);
     });
 
     return str.join('&');
-  },
+  }
 
-  fetchVimeoData() {
+  fetchVimeoData = () => {
     if (this.state.imageLoaded) {
       return;
     }
@@ -220,15 +226,15 @@ export default React.createClass({
           this.onError(err);
         }
         debug('jsonp response', res);
-        this.setState({
+        this.setMountedState({
           thumb: res[0].thumbnail_large,
           imageLoaded: true
         });
       }
     );
-  },
+  }
 
-  renderImage() {
+  renderImage = () => {
     if (this.state.showingVideo || !this.state.imageLoaded) {
       return;
     }
@@ -251,9 +257,9 @@ export default React.createClass({
         {playButton}
       </div>
     );
-  },
+  }
 
-  renderIframe() {
+  renderIframe = () => {
     if (!this.state.showingVideo) {
       return;
     }
@@ -276,9 +282,9 @@ export default React.createClass({
           src={ this.getIframeUrl() } />
       </div>
     );
-  },
+  }
 
-  renderLoading(imageLoaded, loadingElement) {
+  renderLoading = (imageLoaded, loadingElement) => {
     if (imageLoaded) {
       return;
     }
@@ -288,7 +294,7 @@ export default React.createClass({
     return (
       <Spinner />
     );
-  },
+  }
 
   render() {
     return (
@@ -299,4 +305,4 @@ export default React.createClass({
       </div>
     );
   }
-});
+}

@@ -1,5 +1,5 @@
 {
-  "name": "react-vimeo",
+  "name": "@humblespark/react-vimeo",
   "version": "1.0.0",
   "description": "React component to load video from Vimeo",
   "author": {
@@ -38,7 +38,8 @@
     "test": "npm run lint"
   },
   "peerDependencies": {
-    "react": ">=0.14.0"
+    "react": ">=0.14.0",
+    "prop-types": ">=15.0.0"
   },
   "devDependencies": {
     "babel": "^6.5.2",
